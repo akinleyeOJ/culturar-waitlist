@@ -3,19 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { joinWaitlist } from './actions'; // Import the server action
 
 // --- Custom Icons ---
 
 const InstagramIcon = ({ className }: { className?: string }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
     <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
     <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
@@ -23,24 +16,20 @@ const InstagramIcon = ({ className }: { className?: string }) => (
 );
 
 const TikTokIcon = ({ className }: { className?: string }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    stroke="none"
-    className={className}
-  >
+  <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" className={className}>
     <path d="M19.589 6.686a4.793 4.793 0 0 1-3.77-4.245V2h-3.445v13.672a2.896 2.896 0 0 1-5.201 1.743l-.002-.001.002.001a2.895 2.895 0 0 1 3.183-4.51v-3.5a6.329 6.329 0 0 0-5.394 10.692 6.33 6.33 0 0 0 10.857-4.424V8.687a8.182 8.182 0 0 0 4.773 1.526V6.79a4.831 4.831 0 0 1-1.003-.104z" />
   </svg>
 );
 
 const TwitterIcon = ({ className }: { className?: string }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    stroke="none"
-    className={className}
-  >
+  <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" className={className}>
     <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
+  </svg>
+);
+
+const CheckIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <polyline points="20 6 9 17 4 12" />
   </svg>
 );
 
@@ -74,6 +63,10 @@ export default function Home() {
   const [origin, setOrigin] = useState('');
   const [location, setLocation] = useState('');
 
+  // New Logic States
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
   // --- Scroll Restoration Fix ---
   useEffect(() => {
     if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
@@ -88,6 +81,22 @@ export default function Home() {
     setUserType(type);
     const formElement = document.getElementById('join-waitlist');
     formElement?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleFormSubmit = async (formData: FormData) => {
+    setIsSubmitting(true);
+    // Append the userType (buyer/seller) to the data sent to server
+    formData.append('userType', userType);
+
+    const result = await joinWaitlist(formData);
+
+    setIsSubmitting(false);
+
+    if (result.success) {
+      setIsSuccess(true);
+    } else {
+      alert("Something went wrong. Please check your internet connection and try again.");
+    }
   };
 
   return (
@@ -154,108 +163,164 @@ export default function Home() {
         </motion.section>
 
         {/* --- FORM SECTION --- */}
-        <motion.section variants={itemVariants} id="join-waitlist" className="w-full max-w-2xl px-6 py-16">
-          <div className="bg-[#111111]/80 backdrop-blur-xl rounded-[32px] p-8 md:p-12 shadow-2xl border border-white/5">
-            <h3 className="font-bold text-2xl mb-8 text-white">
-              {userType === 'buyer' ? 'Get Early Access' : 'Become a Seller'}
-            </h3>
+        <motion.section variants={itemVariants} id="join-waitlist" className="w-full max-w-2xl px-6 py-16 min-h-[600px] flex items-center justify-center">
+          <AnimatePresence mode="wait">
+            {!isSuccess ? (
+              <motion.div
+                key="form"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.4 }}
+                className="bg-[#111111]/80 backdrop-blur-xl rounded-[32px] p-8 md:p-12 shadow-2xl border border-white/5 w-full"
+              >
+                <h3 className="font-bold text-2xl mb-8 text-white">
+                  {userType === 'buyer' ? 'Get Early Access' : 'Become a Seller'}
+                </h3>
 
-            <form className="space-y-6">
-              <div className="space-y-2">
-                <label className="block text-sm font-bold text-gray-300 tracking-wide">Email Address</label>
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#D97C56]/50 focus:border-[#D97C56] transition-all text-white placeholder:text-gray-600"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-gray-300 tracking-wide">From</label>
-                  <div className="relative">
-                    <select
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#D97C56]/50 focus:border-[#D97C56] transition-all appearance-none cursor-pointer text-white"
-                      value={origin}
-                      onChange={(e) => setOrigin(e.target.value)}
-                    >
-                      <option value="" disabled>Select Origin</option>
-                      <option value="Nigeria">Nigeria</option>
-                      <option value="Zimbabwe">Zimbabwe</option>
-                      <option value="Cameroon">Cameroon</option>
-                      <option value="South Africa">South Africa</option>
-                      <option value="Ghana">Ghana</option>
-                      <option value="Other">Other</option>
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
+                <form action={handleFormSubmit} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold text-gray-300 tracking-wide">Email Address</label>
+                    <input
+                      name="email"
+                      type="email"
+                      required
+                      placeholder="your@email.com"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#D97C56]/50 focus:border-[#D97C56] transition-all text-white placeholder:text-gray-600"
+                    />
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-gray-300 tracking-wide">Location</label>
-                  <div className="relative">
-                    <select
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#D97C56]/50 focus:border-[#D97C56] transition-all appearance-none cursor-pointer text-white"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                    >
-                      <option value="" disabled>Select Location</option>
-                      <option value="Germany">Germany</option>
-                      <option value="United Kingdom">United Kingdom</option>
-                      <option value="France">France</option>
-                      <option value="Netherlands">Netherlands</option>
-                      <option value="Other">Other</option>
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="block text-sm font-bold text-gray-300 tracking-wide">From</label>
+                      <div className="relative">
+                        <select
+                          name="origin"
+                          required
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#D97C56]/50 focus:border-[#D97C56] transition-all appearance-none cursor-pointer text-white"
+                          value={origin}
+                          onChange={(e) => setOrigin(e.target.value)}
+                        >
+                          <option value="" disabled>Select Origin</option>
+                          <option value="Nigeria">Nigeria</option>
+                          <option value="Zimbabwe">Zimbabwe</option>
+                          <option value="Cameroon">Cameroon</option>
+                          <option value="South Africa">South Africa</option>
+                          <option value="Ghana">Ghana</option>
+                          <option value="Other">Other</option>
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-sm font-bold text-gray-300 tracking-wide">Location</label>
+                      <div className="relative">
+                        <select
+                          name="location"
+                          required
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#D97C56]/50 focus:border-[#D97C56] transition-all appearance-none cursor-pointer text-white"
+                          value={location}
+                          onChange={(e) => setLocation(e.target.value)}
+                        >
+                          <option value="" disabled>Select Location</option>
+                          <option value="Germany">Germany</option>
+                          <option value="United Kingdom">United Kingdom</option>
+                          <option value="France">France</option>
+                          <option value="Netherlands">Netherlands</option>
+                          <option value="Poland">Poland</option>
+                          <option value="Other">Other</option>
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <AnimatePresence>
-                {origin === 'Other' && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
+                  <AnimatePresence>
+                    {origin === 'Other' && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="space-y-2 pt-2">
+                          <label className="block text-sm font-bold text-gray-300 tracking-wide">Please specify your country</label>
+                          <input
+                            name="custom_origin"
+                            type="text"
+                            placeholder="Enter your country"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#D97C56]/50 focus:border-[#D97C56] transition-all text-white placeholder:text-gray-600"
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <AnimatePresence>
+                    {location === 'Other' && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="space-y-2 pt-2">
+                          <label className="block text-sm font-bold text-gray-300 tracking-wide">Please specify your location</label>
+                          <input
+                            name="custom_location"
+                            type="text"
+                            placeholder="Enter your city/region"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#D97C56]/50 focus:border-[#D97C56] transition-all text-white placeholder:text-gray-600"
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <button
+                    disabled={isSubmitting}
+                    className="w-full bg-[#D97C56] text-white font-bold text-lg py-4 rounded-xl mt-8 hover:bg-[#c56b46] transition-all shadow-lg active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    <div className="space-y-2 pt-2">
-                      <label className="block text-sm font-bold text-gray-300 tracking-wide">Please specify your country</label>
-                      <input
-                        type="text"
-                        placeholder="Enter your country"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#D97C56]/50 focus:border-[#D97C56] transition-all text-white placeholder:text-gray-600"
-                      />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    {isSubmitting ? (
+                      <>Processing...</>
+                    ) : (
+                      'Join Waitlist'
+                    )}
+                  </button>
+                </form>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                className="bg-[#111111]/80 backdrop-blur-xl rounded-[32px] p-12 shadow-2xl border border-[#D97C56]/30 text-center w-full max-w-lg"
+              >
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 10 }}
+                  className="w-20 h-20 bg-[#D97C56] rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_-5px_rgba(217,124,86,0.6)]"
+                >
+                  <CheckIcon className="w-10 h-10 text-white" />
+                </motion.div>
 
-              <AnimatePresence>
-                {location === 'Other' && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="space-y-2 pt-2">
-                      <label className="block text-sm font-bold text-gray-300 tracking-wide">Please specify your location</label>
-                      <input
-                        type="text"
-                        placeholder="Enter your city/region"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#D97C56]/50 focus:border-[#D97C56] transition-all text-white placeholder:text-gray-600"
-                      />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                <h3 className="font-bold text-3xl text-white mb-4">You're on the list!</h3>
+                <p className="text-gray-400 text-lg mb-8 leading-relaxed">
+                  Thanks for joining <strong>Culturar</strong>. We'll let you know as soon as we open the doors to {origin === 'Other' ? 'your location' : origin}.
+                </p>
 
-              <button className="w-full bg-[#D97C56] text-white font-bold text-lg py-4 rounded-xl mt-8 hover:bg-[#c56b46] transition-all shadow-lg active:scale-[0.99]">
-                Join Waitlist
-              </button>
-            </form>
-          </div>
+                <button
+                  onClick={() => setIsSuccess(false)}
+                  className="text-sm text-gray-500 hover:text-[#D97C56] transition-colors underline underline-offset-4"
+                >
+                  Register another email
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.section>
 
         {/* --- INFO SECTION --- */}
