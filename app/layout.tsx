@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Inter, Fraunces } from "next/font/google";
+import { Syne } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const fraunces = Fraunces({ 
+// Configure Syne as the ONLY font
+const syne = Syne({ 
   subsets: ["latin"], 
-  variable: "--font-fraunces",
-  weight: ["300", "400", "600", "700", "900"] 
+  variable: "--font-syne",
+  weight: ["400", "500", "600", "700", "800"], 
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -21,7 +22,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${fraunces.variable} bg-[#FFF8F5]`}>
+      {/* Apply Syne variable globally */}
+      <body className={`${syne.variable} bg-[#050505] text-[#ededed] antialiased font-sans`}>
         {children}
       </body>
     </html>
